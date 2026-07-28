@@ -34,7 +34,7 @@
 */
 
 static os_work_t         g_work;
-static volatile uint32_t g_work_run_count = 0U;
+static __IO uint32_t g_work_run_count = 0U;
 
 /*
  * ***********************************************************************************************************

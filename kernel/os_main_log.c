@@ -2,14 +2,20 @@
  * @file os_main_log.c
  * @brief Ahura kernel example: buffered debug logging (OS_LOG_*).
  *
- * Two tasks log at different rates while os_main logs a heartbeat, showing that a log call
- * costs the caller almost nothing: it formats into a ring buffer and returns, and the kernel
- * log task transmits in the background through os_log_output_cb (implement that in os_cb.c).
+ * The point of OS_LOG_* is that logging costs the calling task almost nothing.
+ * The line is formatted at the call site into a ring buffer and the call
+ * returns; the low-priority kernel task tsk_log drains the buffer in the
+ * background and hands finished bytes to os_log_output_cb(), which owns the
+ * transport. printf, by contrast, pushes every byte to the UART before it
+ * returns, so at 115200 baud an 80-character line stalls the caller for roughly
+ * 7 ms, which is more than seven scheduler ticks.
  *
- * The fast task deliberately outruns a slow serial port to demonstrate the drop counter: lines
- * that do not fit are dropped whole and reported, rather than blocking the task or writing a
- * half line. Copy this file into the application source tree as os_main.c to run it; needs
- * OS_CONFIG_LOG_ENABLE=1 in os_config.h (the default).
+ * This example measures that difference, then shows what happens when logging
+ * outruns the transport.
+ *
+ * Copy this file into the application source tree as os_main.c to run it. Needs
+ * OS_CONFIG_LOG_ENABLE=1 in os_config.h, and the application must define
+ * os_log_output_cb() (see os_cb_template.c) or the output goes nowhere.
  *
  * @copyright (c) 2026 Ahura Project Contributors
  *            SPDX-License-Identifier: MIT
@@ -24,77 +30,19 @@
 
 #include "ahura.h"
 
+#include <stdio.h>
+
 #if !(OS_CONFIG_LOG_ENABLE == 1U)
 #error "os_main_log.c needs OS_CONFIG_LOG_ENABLE=1 in os_config.h"
 #endif
 
 /*
  * ***********************************************************************************************************
- * Private objects
+ * Macros
  * ***********************************************************************************************************
 */
 
-OS_TASK_DEFINE(sensor, 512U);
-OS_TASK_DEFINE(chatty, 512U);
-
-/*
- * ***********************************************************************************************************
- * Private function implementations
- * ***********************************************************************************************************
-*/
-
-/******************************************************************************************************/
-/**
- * @brief Logs a plausible sensor reading once a second, at a mix of severities.
- */
-static void sensor_entry(void *context)
-{
-    uint32_t reading = 0U;
-
-    (void)context;
-
-    while (1)
-    {
-        reading = (reading + 7U) % 100U;
-
-        if (reading > 90U)
-        {
-            OS_LOG_ERROR("sensor over range: %lu", (unsigned long)reading);
-        }
-        else if (reading > 70U)
-        {
-            OS_LOG_WARN("sensor high: %lu", (unsigned long)reading);
-        }
-        else
-        {
-            OS_LOG_INFO("sensor = %lu", (unsigned long)reading);
-        }
-
-        (void)os_delay_ms(1000U);
-    }
-}
-
-/******************************************************************************************************/
-/**
- * @brief Logs far faster than a serial port can drain, so the ring fills and the kernel starts
- *        dropping lines. Watch for the "log lines dropped" notice: the task itself never blocks
- *        and never slows down, which is the whole point of buffering.
- */
-static void chatty_entry(void *context)
-{
-    uint32_t counter = 0U;
-
-    (void)context;
-
-    while (1)
-    {
-        OS_LOG_DEBUG("chatty tick %lu (dropped so far: %lu)",
-                     (unsigned long)counter, (unsigned long)os_log_dropped_get());
-        counter++;
-
-        (void)os_delay_ms(5U);
-    }
-}
+#define LOG_BURST_LINES 200U
 
 /*
  * ***********************************************************************************************************
@@ -104,25 +52,72 @@ static void chatty_entry(void *context)
 
 /******************************************************************************************************/
 /**
- * @brief Default application task body: starts the two logging tasks, then logs a heartbeat.
+ * @brief Default application task body: contrasts buffered logging with blocking printf.
  *
  * @return None.
  */
 void os_main(void)
 {
-    OS_LOG_INFO("kernel up, log level compiled in at %u", (unsigned)OS_CONFIG_LOG_LEVEL);
+    uint32_t iteration = 0U;
 
-    (void)os_task_create(&sensor, OS_TASK_CONFIG(sensor, sensor_entry, NULL, OS_TASK_PRIO_3));
-    (void)os_task_start(&sensor);
+    /* Severity picks the letter in the line and, more importantly, whether the call survives
+     * OS_CONFIG_LOG_LEVEL at all. Anything above the configured level compiles to nothing at the
+     * call site, arguments included, so an OS_LOG_DEBUG left in a release build costs neither
+     * flash nor the time to evaluate what it would have printed. */
+    OS_LOG_ERROR("this is an error line");
+    OS_LOG_WARN("this is a warning line");
+    OS_LOG_INFO("printf-style formatting works: %s = %d, %#x", "value", 42, 0xB0Bu);
+    OS_LOG_DEBUG("only compiled in when OS_CONFIG_LOG_LEVEL is OS_LOG_LEVEL_DEBUG");
 
-    (void)os_task_create(&chatty, OS_TASK_CONFIG(chatty, chatty_entry, NULL, OS_TASK_PRIO_2));
-    (void)os_task_start(&chatty);
+    /* --- Cost at the call site --- */
+    {
+        uint32_t t_log;
+        uint32_t t_printf;
+        uint32_t start;
+
+        start = os_tick_get();
+        OS_LOG_INFO("measuring how long this call takes to return");
+        t_log = os_tick_get() - start;
+
+        start = os_tick_get();
+        printf("[log] measuring how long this printf takes to return\r\n");
+        t_printf = os_tick_get() - start;
+
+        /* Expect the log call to be at or near 0 ticks while printf shows the transmission. The
+         * bytes of that log line are still going out after the call returned, on tsk_log. */
+        OS_LOG_INFO("OS_LOG_INFO returned in %lu ticks, printf in %lu",
+                    (unsigned long)t_log, (unsigned long)t_printf);
+    }
+
+    /* --- Overrun behaviour --- */
+
+    /* Burst far more than the ring can hold. Since this task outranks tsk_log, the drain task
+     * cannot run until this loop blocks, so the buffer fills. A line that does not fit is dropped
+     * WHOLE and counted, never truncated into the buffer: half a line would corrupt both the line
+     * already there and the one after it. */
+    for (iteration = 0U; iteration < LOG_BURST_LINES; iteration++)
+    {
+        OS_LOG_INFO("burst line %lu of %lu", (unsigned long)iteration, (unsigned long)LOG_BURST_LINES);
+    }
+
+    /* Blocking here lets tsk_log run and drain what did fit. Once the ring empties it reports the
+     * drops itself, as a "*** N log lines dropped ***" line. */
+    (void)os_delay_ms(500U);
+
+    printf("[log] %lu of %lu burst lines were dropped by a full buffer\r\n",
+           (unsigned long)os_log_dropped_get(), (unsigned long)LOG_BURST_LINES);
+    printf("[log] raise OS_CONFIG_LOG_BUFFER_SIZE, or log less, to reduce that\r\n");
+
+    /* --- Steady state --- */
+
+    iteration = 0U;
 
     while (1)
     {
-        OS_LOG_INFO("heartbeat, uptime %lu ms, cpu %lu%%",
-                    (unsigned long)os_tick_get(), (unsigned long)os_cpu_usage_get());
-
-        (void)os_delay_ms(5000U);
+        /* One line every second drains long before the next arrives, so nothing is ever dropped
+         * and this task never waits on the UART. */
+        OS_LOG_INFO("heartbeat %lu, tick %lu", (unsigned long)iteration, (unsigned long)os_tick_get());
+        iteration++;
+        (void)os_delay_ms(1000U);
     }
 }

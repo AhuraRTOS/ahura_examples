@@ -35,7 +35,7 @@
 
 OS_TASK_DEFINE(spinner, 512U);
 
-static volatile bool g_spin = false;
+static __IO bool g_spin = false;
 
 /*
  * ***********************************************************************************************************

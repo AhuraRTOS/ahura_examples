@@ -35,7 +35,7 @@
 
 static os_timer_t        g_timer_oneshot;
 static os_timer_t        g_timer_periodic;
-static volatile uint32_t g_periodic_count = 0U;
+static __IO uint32_t g_periodic_count = 0U;
 
 /*
  * ***********************************************************************************************************

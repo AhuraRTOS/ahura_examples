@@ -37,8 +37,8 @@
 OS_TASK_DEFINE(worker, 512U);
 
 static os_mutex_t        g_mutex;
-static volatile uint32_t g_shared_value = 0U;
-static volatile bool     g_worker_done  = false;
+static __IO uint32_t g_shared_value = 0U;
+static __IO bool     g_worker_done  = false;
 
 /*
  * ***********************************************************************************************************

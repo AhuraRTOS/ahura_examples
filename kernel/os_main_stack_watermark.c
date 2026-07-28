@@ -45,7 +45,7 @@ OS_TASK_DEFINE(worker, 512U);
 /******************************************************************************************************/
 static void worker_entry(void *context)
 {
-    volatile uint8_t local_buffer[128]; /* burn some stack depth so the watermark has something to report */
+    __IO uint8_t local_buffer[128]; /* burn some stack depth so the watermark has something to report */
     size_t            i;
 
     (void)context;

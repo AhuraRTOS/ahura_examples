@@ -32,7 +32,7 @@
 
 OS_TASK_DEFINE(worker, 512U);
 
-static volatile uint32_t g_worker_iterations = 0U;
+static __IO uint32_t g_worker_iterations = 0U;
 
 /*
  * ***********************************************************************************************************
