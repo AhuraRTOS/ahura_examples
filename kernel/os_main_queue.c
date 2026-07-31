@@ -9,9 +9,11 @@
  * Two queues carry the same items, to show the only thing that differs between
  * them, which is where the item buffer comes from:
  *
- *   - g_static_queue  OS_QUEUE_DEFINE, sized at compile time.
- *   - g_dynamic_queue os_queue_create, buffer taken from the kernel heap, so the
- *                     capacity could just as well be a run-time value.
+ *   - g_static_queue  OS_QUEUE_DEFINE_STATIC: sized and initialized at compile time,
+ *                     usable with nothing to call first.
+ *   - g_dynamic_queue OS_QUEUE_DEFINE_DYNAMIC + os_queue_init_dynamic(), buffer taken
+ *                     from the kernel heap, so the capacity could just as well be a
+ *                     run-time value.
  *
  * Every send and receive call is identical for both. Copy this file into the
  * application source tree as os_main.c to run it; needs OS_CONFIG_QUEUE_ENABLE=1
@@ -47,16 +49,17 @@ OS_TASK_DEFINE(consumer, 512U);
 
 #define QUEUE_CAPACITY 4U
 
-/* Declares the queue AND its buffer. The buffer is g_static_queue_BUFFER; nothing but
- * OS_QUEUE_INIT below should ever name it. Preferred over calling os_queue_init() by hand,
- * because OS_QUEUE_INIT derives the item size and capacity from that array, so they cannot
- * disagree with the storage that actually exists. */
-OS_QUEUE_DEFINE(g_static_queue, uint32_t, QUEUE_CAPACITY);
+/* Declares the queue AND its buffer, and initializes both at compile time - there is nothing to
+ * call before the first send. The buffer is g_static_queue_BUFFER and should never be named by
+ * hand; the item size and capacity come from this declaration, so they cannot disagree with the
+ * storage that actually exists. */
+OS_QUEUE_DEFINE_STATIC(g_static_queue, uint32_t, QUEUE_CAPACITY);
 
 #if (OS_CONFIG_ALLOC_ENABLE == 1U)
-/* Only the item buffer is allocated; the handle stays an ordinary object here, so its lifetime
- * is obvious and a failed create leaves nothing to clean up. */
-static os_queue_t g_dynamic_queue;
+/* Declares the queue object only: os_queue_init_dynamic() below allocates the item buffer. Keeping
+ * the object out of the allocation makes its lifetime obvious and means a failed init leaves
+ * nothing to clean up. */
+OS_QUEUE_DEFINE_DYNAMIC(g_dynamic_queue);
 #endif
 
 /*
@@ -106,23 +109,21 @@ void os_main(void)
 {
     uint32_t next_value = 0U;
 
-    if (OS_QUEUE_INIT(g_static_queue) != OS_STATUS_OK)
-    {
-        printf("[queue] static queue init failed\r\n");
-        return;
-    }
+    /* g_static_queue needs no setup: OS_QUEUE_DEFINE_STATIC initialized it at compile time, and
+     * there is no status to check because nothing can fail. Only the dynamic queue has an init
+     * call, and only it can fail. */
 
 #if (OS_CONFIG_ALLOC_ENABLE == 1U)
     /* The geometry is passed as ordinary arguments, so it could come from a config value read at
      * boot rather than a compile-time constant. Worth checking the status: unlike the static
      * queue, this one can fail because the kernel heap is exhausted. */
-    if (os_queue_create(&g_dynamic_queue, sizeof(uint32_t), QUEUE_CAPACITY) != OS_STATUS_OK)
+    if (os_queue_init_dynamic(&g_dynamic_queue, sizeof(uint32_t), QUEUE_CAPACITY) != OS_STATUS_OK)
     {
-        printf("[queue] dynamic queue create failed (kernel heap exhausted?)\r\n");
+        printf("[queue] dynamic queue init failed (kernel heap exhausted?)\r\n");
         return;
     }
 
-    printf("[queue] dynamic queue created, %u bytes of kernel heap left\r\n",
+    printf("[queue] dynamic queue allocated, %u bytes of kernel heap left\r\n",
            (unsigned)os_mem_free_get());
 #endif
 
@@ -144,6 +145,8 @@ void os_main(void)
     }
 
     /* Never reached here, but a queue that outlives its usefulness is torn down with
-     * os_queue_delete(&g_dynamic_queue), which returns the buffer to the kernel heap. It refuses
-     * with OS_STATUS_BUSY while any task is still blocked on the queue. */
+     * os_queue_cleanup(&g_dynamic_queue), which returns the buffer to the kernel heap. The same
+     * call on g_static_queue just empties it, freeing nothing and leaving it usable, so teardown
+     * code does not care which kind it is holding. It refuses with OS_STATUS_BUSY while any task
+     * is still blocked on the queue. */
 }
