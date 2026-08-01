@@ -74,7 +74,7 @@ void os_main(void)
     /* Starts empty (0 tokens), holds at most 4 - os_semaphore_give() beyond
      * that would return OS_STATUS_FULL. */
     (void)os_semaphore_init(&g_sem, 0U, 4U);
-    (void)os_task_create(&consumer, OS_TASK_CONFIG(consumer, consumer_entry, NULL, OS_TASK_PRIO_2));
+    (void)os_task_create(&consumer, OS_TASK_CONFIG(consumer_entry, NULL, OS_TASK_PRIO_2));
     (void)os_task_start(&consumer);
 
     while (1)

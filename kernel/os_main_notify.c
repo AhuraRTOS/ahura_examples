@@ -73,7 +73,7 @@ void os_main(void)
 {
     uint32_t counter = 0U;
 
-    (void)os_task_create(&receiver, OS_TASK_CONFIG(receiver, receiver_entry, NULL, OS_TASK_PRIO_2));
+    (void)os_task_create(&receiver, OS_TASK_CONFIG(receiver_entry, NULL, OS_TASK_PRIO_2));
     (void)os_task_start(&receiver);
 
     while (1)

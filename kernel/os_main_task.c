@@ -83,7 +83,7 @@ static void worker_entry(void *context)
  */
 void os_main(void)
 {
-    (void)os_task_create(&worker, OS_TASK_CONFIG(worker, worker_entry, NULL, OS_TASK_PRIO_1));
+    (void)os_task_create(&worker, OS_TASK_CONFIG(worker_entry, NULL, OS_TASK_PRIO_1));
     printf("[task] created: state=%s\r\n", task_state_name(os_task_state_get(&worker)));
 
     (void)os_task_start(&worker);

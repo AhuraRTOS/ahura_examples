@@ -134,10 +134,10 @@ void os_main(void)
     printf("[atomic] two tasks, %lu increments each, %ld expected in total\r\n",
            (unsigned long)INCREMENTS_PER_TASK, (long)expected);
 
-    (void)os_task_create(&writer_a, OS_TASK_CONFIG(writer_a, writer_entry,
+    (void)os_task_create(&writer_a, OS_TASK_CONFIG(writer_entry,
                                                   (void *)(uintptr_t)FLAG_FIRST_WRITER_DONE,
                                                   OS_TASK_PRIO_3));
-    (void)os_task_create(&writer_b, OS_TASK_CONFIG(writer_b, writer_entry,
+    (void)os_task_create(&writer_b, OS_TASK_CONFIG(writer_entry,
                                                   (void *)(uintptr_t)FLAG_SECOND_WRITER_DONE,
                                                   OS_TASK_PRIO_3));
     (void)os_task_start(&writer_a);

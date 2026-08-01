@@ -127,7 +127,7 @@ void os_main(void)
            (unsigned)os_mem_free_get());
 #endif
 
-    (void)os_task_create(&consumer, OS_TASK_CONFIG(consumer, consumer_entry, NULL, OS_TASK_PRIO_2));
+    (void)os_task_create(&consumer, OS_TASK_CONFIG(consumer_entry, NULL, OS_TASK_PRIO_2));
     (void)os_task_start(&consumer);
 
     while (1)

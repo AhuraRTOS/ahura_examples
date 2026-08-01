@@ -89,8 +89,8 @@ static void task_b_entry(void *context)
 void os_main(void)
 {
     (void)os_event_group_init(&g_event);
-    (void)os_task_create(&task_a, OS_TASK_CONFIG(task_a, task_a_entry, NULL, OS_TASK_PRIO_1));
-    (void)os_task_create(&task_b, OS_TASK_CONFIG(task_b, task_b_entry, NULL, OS_TASK_PRIO_1));
+    (void)os_task_create(&task_a, OS_TASK_CONFIG(task_a_entry, NULL, OS_TASK_PRIO_1));
+    (void)os_task_create(&task_b, OS_TASK_CONFIG(task_b_entry, NULL, OS_TASK_PRIO_1));
     (void)os_task_start(&task_a);
     (void)os_task_start(&task_b);
 

@@ -92,7 +92,7 @@ void os_main(void)
     uint32_t i;
 
     (void)os_mutex_init(&g_mutex);
-    (void)os_task_create(&worker, OS_TASK_CONFIG(worker, worker_entry, NULL, OS_TASK_PRIO_1));
+    (void)os_task_create(&worker, OS_TASK_CONFIG(worker_entry, NULL, OS_TASK_PRIO_1));
     (void)os_task_start(&worker);
 
     for (i = 0U; i < 5U; i++)

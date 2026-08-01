@@ -2,10 +2,12 @@
  * @file os_main_work.c
  * @brief Ahura kernel example: deferrable work items (os_work_*).
  *
- * Submits a work item that runs after a delay on the kernel work task
- * (tsk_work), then submits a second one and cancels it before it gets a
- * chance to run - os_work_is_pending() shows the state either way. Copy
- * this file into the application source tree as os_main.c to run it; needs
+ * Submits functions to run later on the kernel work task (tsk_work): one after
+ * a delay, then two at once to show that each submission is its own call. There
+ * is no work object to declare - os_work_submit takes the handler, its context
+ * and a delay, and the kernel keeps the submission until it runs.
+ *
+ * Copy this file into the application source tree as os_main.c to run it; needs
  * OS_CONFIG_WORK_ENABLE=1 in os_config.h (the default).
  *
  * @copyright (c) 2026 Ahura Project Contributors
@@ -33,7 +35,6 @@
  * ***********************************************************************************************************
 */
 
-static os_work_t         g_work;
 static __IO uint32_t g_work_run_count = 0U;
 
 /*
@@ -43,11 +44,13 @@ static __IO uint32_t g_work_run_count = 0U;
 */
 
 /******************************************************************************************************/
-static void work_handler(void *context)
+static void work_handler(void *data, size_t len)
 {
-    (void)context;
+    const uint32_t label = (len == sizeof(uint32_t)) ? *(const uint32_t *)data : 0U;
+
     g_work_run_count++;
-    printf("[work] handler ran (count=%lu)\r\n", (unsigned long)g_work_run_count);
+    printf("[work] handler ran with label %lu (count=%lu)\r\n",
+           (unsigned long)label, (unsigned long)g_work_run_count);
 }
 
 /*
@@ -58,27 +61,31 @@ static void work_handler(void *context)
 
 /******************************************************************************************************/
 /**
- * @brief Default application task body: submits work, then submits-and-cancels work.
+ * @brief Default application task body: submits deferred work, immediate and delayed.
  *
  * @return None.
  */
 void os_main(void)
 {
-    (void)os_work_init(&g_work, work_handler, NULL);
-
     while (1)
     {
-        printf("[work] submitting work (runs in 200 ms)\r\n");
-        (void)os_work_submit(&g_work, 200U);
-        (void)os_delay_ms(50U);
-        printf("[work] is_pending=%d\r\n", (int)os_work_is_pending(&g_work));
+        /* Both the handler and the payload are copied into a kernel slot, so these locals may go
+         * out of scope the moment os_work_submit returns - there is nothing to keep alive. */
+        uint32_t label_a = 1U;
+        uint32_t label_b = 2U;
+
+        printf("[work] submitting one to run in 200 ms\r\n");
+        (void)os_work_submit(work_handler, &label_a, sizeof(label_a), 200U);
         (void)os_delay_ms(500U);
 
-        printf("[work] submitting work then cancelling before it runs\r\n");
-        (void)os_work_submit(&g_work, 500U);
-        (void)os_delay_ms(50U);
-        (void)os_work_cancel(&g_work);
-        printf("[work] cancelled: is_pending=%d\r\n", (int)os_work_is_pending(&g_work));
+        /* Each submission is its own call, so the same handler queued twice runs twice - there is
+         * no work item for the second submission to reschedule. */
+        printf("[work] submitting two at once, one now and one in 100 ms\r\n");
+        (void)os_work_submit(work_handler, &label_a, sizeof(label_a), 0U);
+        (void)os_work_submit(work_handler, &label_b, sizeof(label_b), 100U);
+
+        /* And a payload-free submission: NULL and 0 when the call needs no data. */
+        (void)os_work_submit(work_handler, NULL, 0U, 300U);
         (void)os_delay_ms(2000U);
     }
 }

@@ -75,7 +75,7 @@ static void worker_entry(void *context)
  */
 void os_main(void)
 {
-    (void)os_task_create(&worker, OS_TASK_CONFIG(worker, worker_entry, NULL, OS_TASK_PRIO_1));
+    (void)os_task_create(&worker, OS_TASK_CONFIG(worker_entry, NULL, OS_TASK_PRIO_1));
     (void)os_task_start(&worker);
     (void)os_delay_ms(50U); /* let the worker reach its own idle loop at least once */
 

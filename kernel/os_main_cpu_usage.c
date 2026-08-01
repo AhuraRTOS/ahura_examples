@@ -76,7 +76,7 @@ static void spinner_entry(void *context)
  */
 void os_main(void)
 {
-    (void)os_task_create(&spinner, OS_TASK_CONFIG(spinner, spinner_entry, NULL, OS_TASK_PRIO_1));
+    (void)os_task_create(&spinner, OS_TASK_CONFIG(spinner_entry, NULL, OS_TASK_PRIO_1));
     (void)os_task_start(&spinner);
 
     while (1)
