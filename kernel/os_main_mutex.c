@@ -60,11 +60,11 @@ static void worker_entry(void *context)
             uint32_t value = g_shared_value;
 
             printf("[mutex] worker  read=%lu\r\n", (unsigned long)value);
-            (void)os_delay_ms(10U); /* widen the window: a broken mutex would let os_main interleave here */
+            os_delay_ms(10U); /* widen the window: a broken mutex would let os_main interleave here */
             g_shared_value = value + 1U;
             (void)os_mutex_unlock(&g_mutex);
         }
-        (void)os_delay_ms(5U);
+        os_delay_ms(5U);
     }
 
     g_worker_done = true;
@@ -102,16 +102,16 @@ void os_main(void)
             uint32_t value = g_shared_value;
 
             printf("[mutex] os_main read=%lu\r\n", (unsigned long)value);
-            (void)os_delay_ms(10U);
+            os_delay_ms(10U);
             g_shared_value = value + 1U;
             (void)os_mutex_unlock(&g_mutex);
         }
-        (void)os_delay_ms(5U);
+        os_delay_ms(5U);
     }
 
     while (!g_worker_done)
     {
-        (void)os_delay_ms(10U);
+        os_delay_ms(10U);
     }
 
     printf("[mutex] final value=%lu (expect 10 - every read-modify-write stayed atomic)\r\n",
@@ -123,6 +123,6 @@ void os_main(void)
 
     while (1)
     {
-        (void)os_delay_ms(1000U);
+        os_delay_ms(1000U);
     }
 }

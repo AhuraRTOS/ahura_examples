@@ -57,7 +57,7 @@ static void spinner_entry(void *context)
         }
         else
         {
-            (void)os_delay_ms(20U);
+            os_delay_ms(20U);
         }
     }
 }
@@ -83,12 +83,12 @@ void os_main(void)
     {
         (void)os_cpu_usage_get(); /* reset the sampling window */
         g_spin = false;
-        (void)os_delay_ms(500U);
+        os_delay_ms(500U);
         printf("[cpu_usage] idle:  %lu%%\r\n", (unsigned long)os_cpu_usage_get());
 
         (void)os_cpu_usage_get(); /* reset the sampling window */
         g_spin = true;
-        (void)os_delay_ms(500U);
+        os_delay_ms(500U);
         printf("[cpu_usage] busy:  %lu%%\r\n", (unsigned long)os_cpu_usage_get());
     }
 }

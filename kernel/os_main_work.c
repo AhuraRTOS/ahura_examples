@@ -76,7 +76,7 @@ void os_main(void)
 
         printf("[work] submitting one to run in 200 ms\r\n");
         (void)os_work_submit(work_handler, &label_a, sizeof(label_a), 200U);
-        (void)os_delay_ms(500U);
+        os_delay_ms(500U);
 
         /* Each submission is its own call, so the same handler queued twice runs twice - there is
          * no work item for the second submission to reschedule. */
@@ -86,6 +86,6 @@ void os_main(void)
 
         /* And a payload-free submission: NULL and 0 when the call needs no data. */
         (void)os_work_submit(work_handler, NULL, 0U, 300U);
-        (void)os_delay_ms(2000U);
+        os_delay_ms(2000U);
     }
 }

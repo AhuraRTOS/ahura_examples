@@ -145,7 +145,7 @@ void os_main(void)
 
     while (os_atomic_get(&g_writers_done) < (int32_t)WRITER_COUNT)
     {
-        (void)os_delay_ms(10U);
+        os_delay_ms(10U);
     }
 
     printf("[atomic] os_atomic_inc()  reached %ld of %ld\r\n",
@@ -159,6 +159,6 @@ void os_main(void)
 
     while (1)
     {
-        (void)os_delay_ms(1000U);
+        os_delay_ms(1000U);
     }
 }

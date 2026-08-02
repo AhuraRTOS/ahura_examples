@@ -102,7 +102,7 @@ void os_main(void)
 
     /* Blocking here lets tsk_log run and drain what did fit. Once the ring empties it reports the
      * drops itself, as a "*** N log lines dropped ***" line. */
-    (void)os_delay_ms(500U);
+    os_delay_ms(500U);
 
     printf("[log] %lu of %lu burst lines were dropped by a full buffer\r\n",
            (unsigned long)os_log_dropped_get(), (unsigned long)LOG_BURST_LINES);
@@ -118,6 +118,6 @@ void os_main(void)
          * and this task never waits on the UART. */
         OS_LOG_INFO("heartbeat %lu, tick %lu", (unsigned long)iteration, (unsigned long)os_tick_get());
         iteration++;
-        (void)os_delay_ms(1000U);
+        os_delay_ms(1000U);
     }
 }

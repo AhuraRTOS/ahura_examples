@@ -80,7 +80,7 @@ void os_main(void)
 
     while (1)
     {
-        (void)os_delay_ms(5000U);
+        os_delay_ms(5000U);
 
         if (g_periodic_count >= 4U)
         {
@@ -93,6 +93,6 @@ void os_main(void)
 
     while (1)
     {
-        (void)os_delay_ms(1000U);
+        os_delay_ms(1000U);
     }
 }

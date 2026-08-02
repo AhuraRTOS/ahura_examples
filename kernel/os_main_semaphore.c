@@ -85,8 +85,8 @@ void os_main(void)
         {
             printf("[semaphore] producer giving a token\r\n");
             (void)os_semaphore_give(&g_sem);
-            (void)os_delay_ms(200U);
+            os_delay_ms(200U);
         }
-        (void)os_delay_ms(1000U);
+        os_delay_ms(1000U);
     }
 }

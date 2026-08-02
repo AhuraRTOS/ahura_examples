@@ -81,6 +81,6 @@ void os_main(void)
         printf("[notify] os_main giving value=%lu\r\n", (unsigned long)counter);
         (void)os_task_notify_give(&receiver, counter);
         counter++;
-        (void)os_delay_ms(500U);
+        os_delay_ms(500U);
     }
 }

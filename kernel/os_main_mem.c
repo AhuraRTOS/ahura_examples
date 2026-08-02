@@ -59,6 +59,6 @@ void os_main(void)
         printf("[mem] freed both: free=%lu bytes, watermark=%lu bytes\r\n", (unsigned long)os_mem_free_get(),
                (unsigned long)os_mem_watermark_get());
 
-        (void)os_delay_ms(2000U);
+        os_delay_ms(2000U);
     }
 }

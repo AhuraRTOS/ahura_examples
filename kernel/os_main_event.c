@@ -55,7 +55,7 @@ static void task_a_entry(void *context)
 
     while (1)
     {
-        (void)os_delay_ms(300U);
+        os_delay_ms(300U);
         printf("[event] task_a setting BIT_A\r\n");
         (void)os_event_group_set_bits(&g_event, BIT_A);
     }
@@ -68,7 +68,7 @@ static void task_b_entry(void *context)
 
     while (1)
     {
-        (void)os_delay_ms(500U);
+        os_delay_ms(500U);
         printf("[event] task_b setting BIT_B\r\n");
         (void)os_event_group_set_bits(&g_event, BIT_B);
     }

@@ -87,17 +87,17 @@ void os_main(void)
     printf("[task] created: state=%s\r\n", task_state_name(os_task_state_get(&worker)));
 
     (void)os_task_start(&worker);
-    (void)os_delay_ms(20U);
+    os_delay_ms(20U);
     printf("[task] started: state=%s, iterations=%lu\r\n", task_state_name(os_task_state_get(&worker)),
            (unsigned long)g_worker_iterations);
 
     (void)os_task_pause(&worker);
     printf("[task] paused:  state=%s\r\n", task_state_name(os_task_state_get(&worker)));
-    (void)os_delay_ms(20U);
+    os_delay_ms(20U);
     printf("[task] iterations frozen while paused: %lu\r\n", (unsigned long)g_worker_iterations);
 
     (void)os_task_start(&worker); /* os_task_start() also resumes a paused task */
-    (void)os_delay_ms(20U);
+    os_delay_ms(20U);
     printf("[task] resumed: state=%s, iterations=%lu\r\n", task_state_name(os_task_state_get(&worker)),
            (unsigned long)g_worker_iterations);
 
@@ -106,6 +106,6 @@ void os_main(void)
 
     while (1)
     {
-        (void)os_delay_ms(1000U);
+        os_delay_ms(1000U);
     }
 }

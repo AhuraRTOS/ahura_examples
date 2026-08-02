@@ -57,7 +57,7 @@ static void worker_entry(void *context)
 
     while (1)
     {
-        (void)os_delay_ms(500U);
+        os_delay_ms(500U);
     }
 }
 
@@ -77,7 +77,7 @@ void os_main(void)
 {
     (void)os_task_create(&worker, OS_TASK_CONFIG(worker_entry, NULL, OS_TASK_PRIO_1));
     (void)os_task_start(&worker);
-    (void)os_delay_ms(50U); /* let the worker reach its own idle loop at least once */
+    os_delay_ms(50U); /* let the worker reach its own idle loop at least once */
 
     while (1)
     {
@@ -89,6 +89,6 @@ void os_main(void)
         (void)os_task_stack_watermark_get(NULL, &min_free); /* NULL = the calling task, i.e. os_main */
         printf("[stack_watermark] os_main task: %lu bytes free at minimum\r\n", (unsigned long)min_free);
 
-        (void)os_delay_ms(1000U);
+        os_delay_ms(1000U);
     }
 }

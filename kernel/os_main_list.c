@@ -81,6 +81,6 @@ void os_main(void)
 
     while (1)
     {
-        (void)os_delay_ms(1000U);
+        os_delay_ms(1000U);
     }
 }

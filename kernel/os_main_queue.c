@@ -141,7 +141,7 @@ void os_main(void)
 #endif
 
         next_value++;
-        (void)os_delay_ms(300U);
+        os_delay_ms(300U);
     }
 
     /* Never reached here, but a queue that outlives its usefulness is torn down with

@@ -40,14 +40,14 @@ void os_main(void)
         uint32_t before = os_tick_get();
 
         printf("[delay] os_delay_ms(500)...\r\n");
-        (void)os_delay_ms(500U);
+        os_delay_ms(500U);
 
         printf("[delay] os_delay_us(200)...\r\n");
-        (void)os_delay_us(200U);
+        os_delay_us(200U);
 
         printf("[delay] %lu ticks elapsed so far\r\n", (unsigned long)(os_tick_get() - before));
 
         printf("[delay] os_delay_s(1)...\r\n");
-        (void)os_delay_s(1U);
+        os_delay_s(1U);
     }
 }
