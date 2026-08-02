@@ -35,7 +35,7 @@
 
 OS_TASK_DEFINE(consumer, 512U);
 
-static os_semaphore_t g_sem;
+static os_semaphore_t os_main_sem;
 
 /*
  * ***********************************************************************************************************
@@ -50,7 +50,7 @@ static void consumer_entry(void *context)
 
     while (1)
     {
-        if (os_semaphore_take(&g_sem, OS_WAIT_FOREVER) == OS_STATUS_OK)
+        if (os_semaphore_take(&os_main_sem, OS_WAIT_FOREVER) == OS_STATUS_OK)
         {
             printf("[semaphore] consumer took a token\r\n");
         }
@@ -73,7 +73,7 @@ void os_main(void)
 {
     /* Starts empty (0 tokens), holds at most 4 - os_semaphore_give() beyond
      * that would return OS_STATUS_FULL. */
-    (void)os_semaphore_init(&g_sem, 0U, 4U);
+    (void)os_semaphore_init(&os_main_sem, 0U, 4U);
     (void)os_task_create(&consumer, OS_TASK_CONFIG(consumer_entry, NULL, OS_TASK_PRIO_2));
     (void)os_task_start(&consumer);
 
@@ -84,7 +84,7 @@ void os_main(void)
         for (i = 0U; i < 3U; i++)
         {
             printf("[semaphore] producer giving a token\r\n");
-            (void)os_semaphore_give(&g_sem);
+            (void)os_semaphore_give(&os_main_sem);
             os_delay_ms(200U);
         }
         os_delay_ms(1000U);

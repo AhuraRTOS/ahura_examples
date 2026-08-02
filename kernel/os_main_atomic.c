@@ -62,12 +62,12 @@ OS_TASK_DEFINE(writer_b, 512U);
 /* Declare shared counters as os_atomic_t and reach them only through os_atomic_*. Declaring one
  * as a plain (or even volatile) int and casting at the call site is how a counter that looks
  * atomic stops being one. */
-static os_atomic_t g_atomic_counter = OS_ATOMIC_INIT(0);
-static os_atomic_t g_flags          = OS_ATOMIC_INIT(0);
-static os_atomic_t g_writers_done   = OS_ATOMIC_INIT(0);
+static os_atomic_t os_main_atomic_counter = OS_ATOMIC_INIT(0);
+static os_atomic_t os_main_flags          = OS_ATOMIC_INIT(0);
+static os_atomic_t os_main_writers_done   = OS_ATOMIC_INIT(0);
 
 /* The control case, deliberately not atomic. */
-static __IO int32_t g_plain_counter = 0;
+static __IO int32_t os_main_plain_counter = 0;
 
 /*
  * ***********************************************************************************************************
@@ -84,17 +84,17 @@ static void writer_entry(void *context)
     for (i = 0U; i < INCREMENTS_PER_TASK; i++)
     {
         /* Indivisible: no other writer can slip between the read and the write. */
-        (void)os_atomic_inc(&g_atomic_counter);
+        (void)os_atomic_inc(&os_main_atomic_counter);
 
         /* Three separate steps, and the scheduler is free to preempt between them. */
-        g_plain_counter = g_plain_counter + 1;
+        os_main_plain_counter = os_main_plain_counter + 1;
     }
 
     /* Set this writer's completion bit without disturbing the other one's, which a
      * read-modify-write on a shared flag word could not promise. */
-    os_atomic_set_bit(&g_flags, bit);
+    os_atomic_set_bit(&os_main_flags, bit);
 
-    (void)os_atomic_inc(&g_writers_done);
+    (void)os_atomic_inc(&os_main_writers_done);
 }
 
 /*
@@ -143,19 +143,19 @@ void os_main(void)
     (void)os_task_start(&writer_a);
     (void)os_task_start(&writer_b);
 
-    while (os_atomic_get(&g_writers_done) < (int32_t)WRITER_COUNT)
+    while (os_atomic_get(&os_main_writers_done) < (int32_t)WRITER_COUNT)
     {
         os_delay_ms(10U);
     }
 
     printf("[atomic] os_atomic_inc()  reached %ld of %ld\r\n",
-           (long)os_atomic_get(&g_atomic_counter), (long)expected);
+           (long)os_atomic_get(&os_main_atomic_counter), (long)expected);
     printf("[atomic] plain ++         reached %ld of %ld (%ld lost)\r\n",
-           (long)g_plain_counter, (long)expected, (long)(expected - g_plain_counter));
+           (long)os_main_plain_counter, (long)expected, (long)(expected - os_main_plain_counter));
 
     printf("[atomic] completion flags: writer A %s, writer B %s\r\n",
-           os_atomic_test_bit(&g_flags, FLAG_FIRST_WRITER_DONE)  ? "done" : "pending",
-           os_atomic_test_bit(&g_flags, FLAG_SECOND_WRITER_DONE) ? "done" : "pending");
+           os_atomic_test_bit(&os_main_flags, FLAG_FIRST_WRITER_DONE)  ? "done" : "pending",
+           os_atomic_test_bit(&os_main_flags, FLAG_SECOND_WRITER_DONE) ? "done" : "pending");
 
     while (1)
     {

@@ -36,9 +36,9 @@
 
 OS_TASK_DEFINE(worker, 512U);
 
-static os_mutex_t        g_mutex;
-static __IO uint32_t g_shared_value = 0U;
-static __IO bool     g_worker_done  = false;
+static os_mutex_t        os_main_mutex;
+static __IO uint32_t os_main_shared_value = 0U;
+static __IO bool     os_main_worker_done  = false;
 
 /*
  * ***********************************************************************************************************
@@ -55,19 +55,19 @@ static void worker_entry(void *context)
 
     for (i = 0U; i < 5U; i++)
     {
-        if (os_mutex_lock(&g_mutex, OS_WAIT_FOREVER) == OS_STATUS_OK)
+        if (os_mutex_lock(&os_main_mutex, OS_WAIT_FOREVER) == OS_STATUS_OK)
         {
-            uint32_t value = g_shared_value;
+            uint32_t value = os_main_shared_value;
 
             printf("[mutex] worker  read=%lu\r\n", (unsigned long)value);
             os_delay_ms(10U); /* widen the window: a broken mutex would let os_main interleave here */
-            g_shared_value = value + 1U;
-            (void)os_mutex_unlock(&g_mutex);
+            os_main_shared_value = value + 1U;
+            (void)os_mutex_unlock(&os_main_mutex);
         }
         os_delay_ms(5U);
     }
 
-    g_worker_done = true;
+    os_main_worker_done = true;
 
     while (1)
     {
@@ -91,35 +91,35 @@ void os_main(void)
 {
     uint32_t i;
 
-    (void)os_mutex_init(&g_mutex);
+    (void)os_mutex_init(&os_main_mutex);
     (void)os_task_create(&worker, OS_TASK_CONFIG(worker_entry, NULL, OS_TASK_PRIO_1));
     (void)os_task_start(&worker);
 
     for (i = 0U; i < 5U; i++)
     {
-        if (os_mutex_lock(&g_mutex, OS_WAIT_FOREVER) == OS_STATUS_OK)
+        if (os_mutex_lock(&os_main_mutex, OS_WAIT_FOREVER) == OS_STATUS_OK)
         {
-            uint32_t value = g_shared_value;
+            uint32_t value = os_main_shared_value;
 
             printf("[mutex] os_main read=%lu\r\n", (unsigned long)value);
             os_delay_ms(10U);
-            g_shared_value = value + 1U;
-            (void)os_mutex_unlock(&g_mutex);
+            os_main_shared_value = value + 1U;
+            (void)os_mutex_unlock(&os_main_mutex);
         }
         os_delay_ms(5U);
     }
 
-    while (!g_worker_done)
+    while (!os_main_worker_done)
     {
         os_delay_ms(10U);
     }
 
     printf("[mutex] final value=%lu (expect 10 - every read-modify-write stayed atomic)\r\n",
-           (unsigned long)g_shared_value);
+           (unsigned long)os_main_shared_value);
 
     printf("[mutex] os_mutex_try_lock() on an unheld mutex -> %d (OS_STATUS_OK)\r\n",
-           (int)os_mutex_try_lock(&g_mutex));
-    (void)os_mutex_unlock(&g_mutex);
+           (int)os_mutex_try_lock(&os_main_mutex));
+    (void)os_mutex_unlock(&os_main_mutex);
 
     while (1)
     {

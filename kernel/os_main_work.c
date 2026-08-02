@@ -35,7 +35,7 @@
  * ***********************************************************************************************************
 */
 
-static __IO uint32_t g_work_run_count = 0U;
+static __IO uint32_t os_main_work_run_count = 0U;
 
 /*
  * ***********************************************************************************************************
@@ -48,9 +48,9 @@ static void work_handler(void *data, size_t len)
 {
     const uint32_t label = (len == sizeof(uint32_t)) ? *(const uint32_t *)data : 0U;
 
-    g_work_run_count++;
+    os_main_work_run_count++;
     printf("[work] handler ran with label %lu (count=%lu)\r\n",
-           (unsigned long)label, (unsigned long)g_work_run_count);
+           (unsigned long)label, (unsigned long)os_main_work_run_count);
 }
 
 /*

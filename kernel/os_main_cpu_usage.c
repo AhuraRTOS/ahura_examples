@@ -35,7 +35,7 @@
 
 OS_TASK_DEFINE(spinner, 512U);
 
-static __IO bool g_spin = false;
+static __IO bool os_main_spin = false;
 
 /*
  * ***********************************************************************************************************
@@ -50,7 +50,7 @@ static void spinner_entry(void *context)
 
     while (1)
     {
-        if (g_spin)
+        if (os_main_spin)
         {
             /* Tight loop: never blocks or yields, so it consumes every tick
              * the scheduler gives it while os_main is asleep below. */
@@ -82,12 +82,12 @@ void os_main(void)
     while (1)
     {
         (void)os_cpu_usage_get(); /* reset the sampling window */
-        g_spin = false;
+        os_main_spin = false;
         os_delay_ms(500U);
         printf("[cpu_usage] idle:  %lu%%\r\n", (unsigned long)os_cpu_usage_get());
 
         (void)os_cpu_usage_get(); /* reset the sampling window */
-        g_spin = true;
+        os_main_spin = true;
         os_delay_ms(500U);
         printf("[cpu_usage] busy:  %lu%%\r\n", (unsigned long)os_cpu_usage_get());
     }

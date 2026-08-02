@@ -9,9 +9,9 @@
  * Two queues carry the same items, to show the only thing that differs between
  * them, which is where the item buffer comes from:
  *
- *   - g_static_queue  OS_QUEUE_DEFINE_STATIC: sized and initialized at compile time,
+ *   - os_main_static_queue  OS_QUEUE_DEFINE_STATIC: sized and initialized at compile time,
  *                     usable with nothing to call first.
- *   - g_dynamic_queue OS_QUEUE_DEFINE_DYNAMIC + os_queue_init_dynamic(), buffer taken
+ *   - os_main_dynamic_queue OS_QUEUE_DEFINE_DYNAMIC + os_queue_init_dynamic(), buffer taken
  *                     from the kernel heap, so the capacity could just as well be a
  *                     run-time value.
  *
@@ -50,16 +50,16 @@ OS_TASK_DEFINE(consumer, 512U);
 #define QUEUE_CAPACITY 4U
 
 /* Declares the queue AND its buffer, and initializes both at compile time - there is nothing to
- * call before the first send. The buffer is g_static_queue_BUFFER and should never be named by
+ * call before the first send. The buffer is os_main_static_queue_BUFFER and should never be named by
  * hand; the item size and capacity come from this declaration, so they cannot disagree with the
  * storage that actually exists. */
-OS_QUEUE_DEFINE_STATIC(g_static_queue, uint32_t, QUEUE_CAPACITY);
+OS_QUEUE_DEFINE_STATIC(os_main_static_queue, uint32_t, QUEUE_CAPACITY);
 
 #if (OS_CONFIG_ALLOC_ENABLE == 1U)
 /* Declares the queue object only: os_queue_init_dynamic() below allocates the item buffer. Keeping
  * the object out of the allocation makes its lifetime obvious and means a failed init leaves
  * nothing to clean up. */
-OS_QUEUE_DEFINE_DYNAMIC(g_dynamic_queue);
+OS_QUEUE_DEFINE_DYNAMIC(os_main_dynamic_queue);
 #endif
 
 /*
@@ -79,13 +79,13 @@ static void consumer_entry(void *context)
 
         /* Blocks until the producer sends. Nothing here is aware of where either queue keeps its
          * items: a queue behaves the same whichever way it got its buffer. */
-        if (os_queue_receive(&g_static_queue, &value, OS_WAIT_FOREVER) == OS_STATUS_OK)
+        if (os_queue_receive(&os_main_static_queue, &value, OS_WAIT_FOREVER) == OS_STATUS_OK)
         {
             printf("[queue] consumer received %lu from the static queue\r\n", (unsigned long)value);
         }
 
 #if (OS_CONFIG_ALLOC_ENABLE == 1U)
-        if (os_queue_receive(&g_dynamic_queue, &value, OS_WAIT_FOREVER) == OS_STATUS_OK)
+        if (os_queue_receive(&os_main_dynamic_queue, &value, OS_WAIT_FOREVER) == OS_STATUS_OK)
         {
             printf("[queue] consumer received %lu from the dynamic queue\r\n", (unsigned long)value);
         }
@@ -109,7 +109,7 @@ void os_main(void)
 {
     uint32_t next_value = 0U;
 
-    /* g_static_queue needs no setup: OS_QUEUE_DEFINE_STATIC initialized it at compile time, and
+    /* os_main_static_queue needs no setup: OS_QUEUE_DEFINE_STATIC initialized it at compile time, and
      * there is no status to check because nothing can fail. Only the dynamic queue has an init
      * call, and only it can fail. */
 
@@ -117,7 +117,7 @@ void os_main(void)
     /* The geometry is passed as ordinary arguments, so it could come from a config value read at
      * boot rather than a compile-time constant. Worth checking the status: unlike the static
      * queue, this one can fail because the kernel heap is exhausted. */
-    if (os_queue_init_dynamic(&g_dynamic_queue, sizeof(uint32_t), QUEUE_CAPACITY) != OS_STATUS_OK)
+    if (os_queue_init_dynamic(&os_main_dynamic_queue, sizeof(uint32_t), QUEUE_CAPACITY) != OS_STATUS_OK)
     {
         printf("[queue] dynamic queue init failed (kernel heap exhausted?)\r\n");
         return;
@@ -133,11 +133,11 @@ void os_main(void)
     while (1)
     {
         printf("[queue] producer sending %lu (count=%lu before send)\r\n", (unsigned long)next_value,
-               (unsigned long)os_queue_count_get(&g_static_queue));
-        (void)os_queue_send(&g_static_queue, &next_value, OS_WAIT_FOREVER);
+               (unsigned long)os_queue_count_get(&os_main_static_queue));
+        (void)os_queue_send(&os_main_static_queue, &next_value, OS_WAIT_FOREVER);
 
 #if (OS_CONFIG_ALLOC_ENABLE == 1U)
-        (void)os_queue_send(&g_dynamic_queue, &next_value, OS_WAIT_FOREVER);
+        (void)os_queue_send(&os_main_dynamic_queue, &next_value, OS_WAIT_FOREVER);
 #endif
 
         next_value++;
@@ -145,8 +145,8 @@ void os_main(void)
     }
 
     /* Never reached here, but a queue that outlives its usefulness is torn down with
-     * os_queue_cleanup(&g_dynamic_queue), which returns the buffer to the kernel heap. The same
-     * call on g_static_queue just empties it, freeing nothing and leaving it usable, so teardown
+     * os_queue_cleanup(&os_main_dynamic_queue), which returns the buffer to the kernel heap. The same
+     * call on os_main_static_queue just empties it, freeing nothing and leaving it usable, so teardown
      * code does not care which kind it is holding. It refuses with OS_STATUS_BUSY while any task
      * is still blocked on the queue. */
 }

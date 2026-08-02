@@ -33,9 +33,9 @@
  * ***********************************************************************************************************
 */
 
-static os_timer_t        g_timer_oneshot;
-static os_timer_t        g_timer_periodic;
-static __IO uint32_t g_periodic_count = 0U;
+static os_timer_t        os_main_timer_oneshot;
+static os_timer_t        os_main_timer_periodic;
+static __IO uint32_t os_main_periodic_count = 0U;
 
 /*
  * ***********************************************************************************************************
@@ -54,8 +54,8 @@ static void oneshot_cb(void *context)
 static void periodic_cb(void *context)
 {
     (void)context;
-    g_periodic_count++;
-    printf("[timer] periodic fired (count=%lu)\r\n", (unsigned long)g_periodic_count);
+    os_main_periodic_count++;
+    printf("[timer] periodic fired (count=%lu)\r\n", (unsigned long)os_main_periodic_count);
 }
 
 /*
@@ -72,24 +72,24 @@ static void periodic_cb(void *context)
  */
 void os_main(void)
 {
-    (void)os_timer_init(&g_timer_oneshot, OS_TICKS_FROM_MS(500U), OS_TIMER_MODE_ONE_SHOT, oneshot_cb, NULL);
-    (void)os_timer_init(&g_timer_periodic, OS_TICKS_FROM_MS(1000U), OS_TIMER_MODE_PERIODIC, periodic_cb, NULL);
+    (void)os_timer_init(&os_main_timer_oneshot, OS_TICKS_FROM_MS(500U), OS_TIMER_MODE_ONE_SHOT, oneshot_cb, NULL);
+    (void)os_timer_init(&os_main_timer_periodic, OS_TICKS_FROM_MS(1000U), OS_TIMER_MODE_PERIODIC, periodic_cb, NULL);
 
-    (void)os_timer_start(&g_timer_oneshot);
-    (void)os_timer_start(&g_timer_periodic);
+    (void)os_timer_start(&os_main_timer_oneshot);
+    (void)os_timer_start(&os_main_timer_periodic);
 
     while (1)
     {
         os_delay_ms(5000U);
 
-        if (g_periodic_count >= 4U)
+        if (os_main_periodic_count >= 4U)
         {
             break;
         }
     }
 
     printf("[timer] stopping the periodic timer\r\n");
-    (void)os_timer_stop(&g_timer_periodic);
+    (void)os_timer_stop(&os_main_timer_periodic);
 
     while (1)
     {

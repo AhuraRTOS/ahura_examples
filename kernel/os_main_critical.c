@@ -35,8 +35,8 @@ OS_TASK_DEFINE(worker, 512U);
 
 #define ITERATIONS 100000UL
 
-static __IO uint32_t g_shared_counter = 0U;
-static __IO bool     g_worker_done    = false;
+static __IO uint32_t os_main_shared_counter = 0U;
+static __IO bool     os_main_worker_done    = false;
 
 /*
  * ***********************************************************************************************************
@@ -54,11 +54,11 @@ static void worker_entry(void *context)
     for (i = 0U; i < ITERATIONS; i++)
     {
         os_critical_enter();
-        g_shared_counter++;
+        os_main_shared_counter++;
         os_critical_exit();
     }
 
-    g_worker_done = true;
+    os_main_worker_done = true;
 
     while (1)
     {
@@ -88,17 +88,17 @@ void os_main(void)
     for (i = 0U; i < ITERATIONS; i++)
     {
         os_critical_enter();
-        g_shared_counter++;
+        os_main_shared_counter++;
         os_critical_exit();
     }
 
-    while (!g_worker_done)
+    while (!os_main_worker_done)
     {
         os_delay_ms(10U);
     }
 
     printf("[critical] expected=%lu actual=%lu (%s)\r\n", (unsigned long)(2UL * ITERATIONS),
-           (unsigned long)g_shared_counter, (g_shared_counter == (2UL * ITERATIONS)) ? "OK" : "CORRUPTED");
+           (unsigned long)os_main_shared_counter, (os_main_shared_counter == (2UL * ITERATIONS)) ? "OK" : "CORRUPTED");
 
     while (1)
     {

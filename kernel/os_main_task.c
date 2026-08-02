@@ -32,7 +32,7 @@
 
 OS_TASK_DEFINE(worker, 512U);
 
-static __IO uint32_t g_worker_iterations = 0U;
+static __IO uint32_t os_main_worker_iterations = 0U;
 
 /*
  * ***********************************************************************************************************
@@ -64,7 +64,7 @@ static void worker_entry(void *context)
 
     while (1)
     {
-        g_worker_iterations++;
+        os_main_worker_iterations++;
         os_task_yield();
     }
 }
@@ -89,17 +89,17 @@ void os_main(void)
     (void)os_task_start(&worker);
     os_delay_ms(20U);
     printf("[task] started: state=%s, iterations=%lu\r\n", task_state_name(os_task_state_get(&worker)),
-           (unsigned long)g_worker_iterations);
+           (unsigned long)os_main_worker_iterations);
 
     (void)os_task_pause(&worker);
     printf("[task] paused:  state=%s\r\n", task_state_name(os_task_state_get(&worker)));
     os_delay_ms(20U);
-    printf("[task] iterations frozen while paused: %lu\r\n", (unsigned long)g_worker_iterations);
+    printf("[task] iterations frozen while paused: %lu\r\n", (unsigned long)os_main_worker_iterations);
 
     (void)os_task_start(&worker); /* os_task_start() also resumes a paused task */
     os_delay_ms(20U);
     printf("[task] resumed: state=%s, iterations=%lu\r\n", task_state_name(os_task_state_get(&worker)),
-           (unsigned long)g_worker_iterations);
+           (unsigned long)os_main_worker_iterations);
 
     (void)os_task_delete(&worker);
     printf("[task] deleted: state=%s\r\n", task_state_name(os_task_state_get(&worker)));
