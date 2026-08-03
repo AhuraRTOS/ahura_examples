@@ -1,6 +1,6 @@
 /**
  * @file os_main_event.c
- * @brief Ahura kernel example: event group (os_event_*).
+ * @brief Ahura kernel example: event (os_event_*).
  *
  * Two worker tasks each set a different bit on their own schedule; os_main
  * waits for both bits to be set at once (wait_all=true), consuming them
