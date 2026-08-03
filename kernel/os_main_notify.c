@@ -1,12 +1,12 @@
 /**
  * @file os_main_notify.c
- * @brief Ahura kernel example: task notifications (os_task_notify_*).
+ * @brief Ahura kernel example: task notifications (os_notify_*).
  *
  * os_main is the giver: it delivers an incrementing value to a higher-priority
- * receiver task every 500 ms. The receiver blocks in os_task_notify_wait() and
+ * receiver task every 500 ms. The receiver blocks in os_notify_wait() and
  * wakes immediately each time a value is given - no separate semaphore/queue
  * object needed. Copy this file into the application source tree as os_main.c
- * to run it; needs OS_CONFIG_TASK_NOTIFY_ENABLE=1 in os_config.h (the default).
+ * to run it; needs OS_CONFIG_NOTIFY_ENABLE=1 in os_config.h (the default).
  *
  * @copyright (c) 2026 Ahura Project Contributors
  *            SPDX-License-Identifier: MIT
@@ -23,8 +23,8 @@
 
 #include <stdio.h>
 
-#if !(OS_CONFIG_TASK_NOTIFY_ENABLE == 1U)
-#error "os_main_notify.c needs OS_CONFIG_TASK_NOTIFY_ENABLE=1 in os_config.h"
+#if !(OS_CONFIG_NOTIFY_ENABLE == 1U)
+#error "os_main_notify.c needs OS_CONFIG_NOTIFY_ENABLE=1 in os_config.h"
 #endif
 
 /*
@@ -50,7 +50,7 @@ static void receiver_entry(void *context)
     {
         uint32_t value;
 
-        if (os_task_notify_wait(OS_WAIT_FOREVER, &value) == OS_STATUS_OK)
+        if (os_notify_wait(OS_WAIT_FOREVER, &value) == OS_STATUS_OK)
         {
             printf("[notify] receiver got value=%lu\r\n", (unsigned long)value);
         }
@@ -79,7 +79,7 @@ void os_main(void)
     while (1)
     {
         printf("[notify] os_main giving value=%lu\r\n", (unsigned long)counter);
-        (void)os_task_notify_give(&receiver, counter);
+        (void)os_notify_give(&receiver, counter);
         counter++;
         os_delay_ms(500U);
     }

@@ -1,6 +1,6 @@
 /**
  * @file os_main_event.c
- * @brief Ahura kernel example: event group (os_event_group_*).
+ * @brief Ahura kernel example: event group (os_event_*).
  *
  * Two worker tasks each set a different bit on their own schedule; os_main
  * waits for both bits to be set at once (wait_all=true), consuming them
@@ -40,7 +40,7 @@
 OS_TASK_DEFINE(task_a, 512U);
 OS_TASK_DEFINE(task_b, 512U);
 
-static os_event_group_t os_main_event;
+static os_event_t os_main_event;
 
 /*
  * ***********************************************************************************************************
@@ -57,7 +57,7 @@ static void task_a_entry(void *context)
     {
         os_delay_ms(300U);
         printf("[event] task_a setting BIT_A\r\n");
-        (void)os_event_group_set_bits(&os_main_event, BIT_A);
+        (void)os_event_set_bits(&os_main_event, BIT_A);
     }
 }
 
@@ -70,7 +70,7 @@ static void task_b_entry(void *context)
     {
         os_delay_ms(500U);
         printf("[event] task_b setting BIT_B\r\n");
-        (void)os_event_group_set_bits(&os_main_event, BIT_B);
+        (void)os_event_set_bits(&os_main_event, BIT_B);
     }
 }
 
@@ -88,7 +88,7 @@ static void task_b_entry(void *context)
  */
 void os_main(void)
 {
-    (void)os_event_group_init(&os_main_event);
+    (void)os_event_init(&os_main_event);
     (void)os_task_create(&task_a, OS_TASK_CONFIG(task_a_entry, NULL, OS_TASK_PRIO_1));
     (void)os_task_create(&task_b, OS_TASK_CONFIG(task_b_entry, NULL, OS_TASK_PRIO_1));
     (void)os_task_start(&task_a);
@@ -98,7 +98,7 @@ void os_main(void)
     {
         uint32_t matched = 0U;
 
-        (void)os_event_group_wait_bits(&os_main_event, BIT_A | BIT_B, true, true, &matched, OS_WAIT_FOREVER);
+        (void)os_event_wait_bits(&os_main_event, BIT_A | BIT_B, true, true, &matched, OS_WAIT_FOREVER);
         printf("[event] both BIT_A and BIT_B observed (matched=%lu)\r\n", (unsigned long)matched);
     }
 }
