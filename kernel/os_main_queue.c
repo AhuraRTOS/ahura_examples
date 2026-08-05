@@ -132,8 +132,14 @@ void os_main(void)
 
     while (1)
     {
-        printf("[queue] producer sending %lu (count=%lu before send)\r\n", (unsigned long)next_value,
-               (unsigned long)os_queue_count_get(&os_main_static_queue));
+        /* count and free are the two halves of the same picture: what is waiting to be received,
+         * and how much room is left. os_queue_free_get is the one back-pressure asks for - a
+         * producer can slow down before a send has to block or report OS_STATUS_FULL. Both are
+         * snapshots, so treat a nonzero free count as "worth trying", not as a guarantee. */
+        printf("[queue] producer sending %lu (count=%lu, free=%lu before send)\r\n",
+               (unsigned long)next_value,
+               (unsigned long)os_queue_count_get(&os_main_static_queue),
+               (unsigned long)os_queue_free_get(&os_main_static_queue));
         (void)os_queue_send(&os_main_static_queue, &next_value, OS_WAIT_FOREVER);
 
 #if (OS_CONFIG_ALLOC_ENABLE == 1U)
